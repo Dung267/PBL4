@@ -1,0 +1,33 @@
+﻿@{
+    ViewData["Title"] = "NSLookup - Tra cứu DNS";
+}
+
+<h2>NSLookup - Tra cứu DNS</h2>
+
+<form method="post" asp-controller="NSLookup" asp-action="Index">
+    <div style="margin-bottom:10px;">
+        <label>Nhập tên miền hoặc IP:</label><br />
+        <input type="text" name="domainOrIp" value="@ViewBag.DomainOrIp" style="width:300px;padding:5px;" />
+    </div>
+
+    <div style="margin-bottom:10px;">
+        <label>Chọn loại bản ghi DNS:</label><br />
+        <select name="recordType" style="width:200px;padding:5px;">
+            <option value="">-- Mặc định (A + AAAA) --</option>
+            <option value="A" selected="@(ViewBag.RecordType == "A")">A (IPv4)</option>
+            <option value="AAAA" selected="@(ViewBag.RecordType == "AAAA")">AAAA (IPv6)</option>
+            <option value="CNAME" selected="@(ViewBag.RecordType == "CNAME")">CNAME</option>
+            <option value="PTR" selected="@(ViewBag.RecordType == "PTR")">PTR (Reverse lookup)</option>
+        </select>
+    </div>
+
+    <button type="submit" style="padding:5px 15px;">Tra cứu</button>
+</form>
+
+<hr />
+
+@if (ViewBag.Result != null)
+{
+    <h3>Kết quả:</h3>
+    <pre style="background-color:antiquewhite;color:forestgreen;padding:10px;border-radius:8px;">@ViewBag.Result</pre>
+}
