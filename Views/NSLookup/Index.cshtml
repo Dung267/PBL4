@@ -1,0 +1,37 @@
+﻿@{
+    ViewData["Title"] = "NSLookup - Tra cứu DNS";
+}
+
+<h2>NSLookup - Tra cứu DNS</h2>
+
+<form method="post" asp-controller="NSLookup" asp-action="Lookup">
+    <div>
+        <label>Nhập tên miền:</label>
+        <input type="text" name="domain" value="@ViewBag.Domain" />
+    </div>
+    <div>
+        <label>Chọn loại bản ghi DNS:</label>
+        <select name="recordType">
+            <option value="">--Mặc định--</option>
+            <option value="A" selected="@(ViewBag.RecordType == "A")">A (IPv4)</option>
+            <option value="AAAA" selected="@(ViewBag.RecordType == "AAAA")">AAAA (IPv6)</option>
+            <option value="MX">MX (Mail Exchange)</option>
+            <option value="SOA">SOA (Start of Authority)</option>
+        </select>
+    </div>
+    <div>
+        <label>Nhập địa chỉ IP:</label>
+        <input type="text" name="ip" value="@ViewBag.IP" />
+    </div>
+    <button type="submit">Tra cứu</button>
+</form>
+
+<hr />
+
+@if (ViewBag.Result != null)
+{
+    <h3>Kết quả:</h3>
+    <div>
+        @Html.Raw(ViewBag.Result.Replace("\n", "<br/>"))
+    </div>
+}

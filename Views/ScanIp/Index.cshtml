@@ -1,0 +1,83 @@
+﻿@{
+    ViewData["Title"] = "IP Scan";
+}
+<h2>IP Scan</h2>
+
+<div>
+    <label>Start IP:</label><br />
+    <input id="startIp" style="width:160px" placeholder="e.g. 192.168.1.1" />
+</div>
+<div style="margin-top:8px">
+    <label>End IP:</label><br />
+    <input id="endIp" style="width:160px" placeholder="e.g. 192.168.1.20" />
+</div>
+
+<div style="margin-top:8px">
+    <label>Timeout (ms):</label>
+    <input id="timeout" value="700" style="width:80px" />
+    <label style="margin-left:12px">Max parallel:</label>
+    <input id="parallel" value="150" style="width:80px" />
+    <button id="startBtn" style="margin-left:12px">Start Scan</button>
+</div>
+
+<div id="status" style="margin-top:12px;font-weight:600"></div>
+
+<table id="tbl" border="1" cellpadding="6" style="margin-top:12px;border-collapse:collapse;width:520px;display:none">
+    <thead>
+        <tr><th>IP</th><th>Alive</th><th>RTT (ms)</th></tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    const btn = document.getElementById('startBtn');
+    const status = document.getElementById('status');
+    const tbl = document.getElementById('tbl');
+    const tbody = tbl.querySelector('tbody');
+
+    btn.addEventListener('click', async () => {
+        const startIp = document.getElementById('startIp').value.trim();
+        const endIp = document.getElementById('endIp').value.trim();
+
+        if (!startIp || !endIp) {
+            alert('Nhập đầy đủ Start IP và End IP');
+            return;
+        }
+
+        btn.disabled = true;
+        status.innerText = 'Đang gửi yêu cầu...';
+        tbody.innerHTML = '';
+        tbl.style.display = 'none';
+
+        const payload = {
+            // Kết hợp hai IP thành một chuỗi "start-end"
+            range: `${startIp}-${endIp}`,
+            timeoutMs: parseInt(document.getElementById('timeout').value) || 700,
+            maxParallel: parseInt(document.getElementById('parallel').value) || 150
+        };
+
+        try {
+            const resp = await fetch('/ScanIp/Start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const j = await resp.json();
+            if (!resp.ok) throw new Error(j?.error || 'Server error');
+
+            status.innerText = `Hoàn thành: ${j.results.length} mục`;
+            if (j.results.length) {
+                tbl.style.display = 'table';
+                j.results.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${r.ip}</td><td>${r.alive}</td><td>${r.rttMs ?? '-'}</td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+        } catch (err) {
+            status.innerText = 'Lỗi: ' + (err.message || err);
+        } finally {
+            btn.disabled = false;
+        }
+    });
+</script>
