@@ -7,6 +7,10 @@
     <label>Nhập IP hoặc dải IP:</label><br />
     <input id="ipRange" style="width:280px" placeholder="e.g. 192.168.1.1-192.168.1.20 hoặc 192.168.1.5" />
 </div>
+<div style="margin-top:8px">
+    <label>End IP:</label><br />
+    <input id="endIp" style="width:160px" placeholder="e.g. 192.168.1.20" />
+</div>
 
 <div style="margin-top:8px">
     <label>Timeout (ms):</label>
@@ -18,15 +22,6 @@
 
 <div id="status" style="margin-top:12px;font-weight:600"></div>
 
-<table id="tbl" border="1" cellpadding="6"
-       style="margin-top:12px;border-collapse:collapse;width:640px;display:none">
-    <thead style="background-color:#f0f0f0">
-        <tr>
-            <th>IP</th>
-            <th>Alive</th>
-            <th>RTT (ms)</th>
-            <th>Hostname</th>
-        </tr>
     </thead>
     <tbody></tbody>
 </table>
@@ -38,19 +33,14 @@
     const tbody = tbl.querySelector('tbody');
 
     btn.addEventListener('click', async () => {
-        const ipRange = document.getElementById('ipRange').value.trim();
-        if (!ipRange) {
-            alert('Vui lòng nhập IP hoặc dải IP');
             return;
         }
 
         btn.disabled = true;
-        status.innerText = 'Đang quét...';
         tbody.innerHTML = '';
         tbl.style.display = 'none';
 
         const payload = {
-            range: ipRange,
             timeoutMs: parseInt(document.getElementById('timeout').value) || 700,
             maxParallel: parseInt(document.getElementById('parallel').value) || 150
         };
@@ -64,20 +54,10 @@
             const j = await resp.json();
             if (!resp.ok) throw new Error(j?.error || 'Server error');
 
-            status.innerText = `Hoàn thành: ${j.results.length} địa chỉ`;
-
             if (j.results.length) {
                 tbl.style.display = 'table';
                 j.results.forEach(r => {
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${r.ip}</td>
-                        <td style="color:${r.alive ? 'green' : 'red'};font-weight:600">
-                            ${r.alive ? '✔️' : '❌'}
-                        </td>
-                        <td>${r.rttMs ?? '-'}</td>
-                        <td>${r.hostname ?? '-'}</td>
-                    `;
                     tbody.appendChild(tr);
                 });
             }

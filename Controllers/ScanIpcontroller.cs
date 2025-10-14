@@ -9,6 +9,7 @@ namespace YourProject.Controllers
 {
     /// <summary>
     /// Controller cho chức năng scan IP.
+    /// Yêu cầu trong project phải có IpScanner.ScanAsync (lớp static mà Ngọc đã có).
     /// </summary>
     [Route("ScanIp")]
     public class ScanIpController : Controller
