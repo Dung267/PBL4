@@ -49,7 +49,6 @@ namespace YourProject.Controllers
                     tcpFallbackPorts: req.TcpFallbackPorts?.ToArray()
                 );
 
-                // 5) Sắp xếp kết quả và trả về JSON
                 // 5) Lấy hostname (nếu alive) + sắp xếp kết quả
                 var list = new List<object>();
 
