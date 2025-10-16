@@ -20,7 +20,22 @@
             <option value="PTR" selected="@(ViewBag.RecordType == "PTR")">PTR (Reverse lookup)</option>
         </select>
     </div>
+    <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom:15px;">
+        <div>
+            <label>Máy chủ DNS (tùy chọn):</label><br />
+            <input type="text" name="customDns" value="@ViewBag.CustomDns" placeholder="8.8.8.8" style="width:200px;padding:5px;" />
+        </div>
 
+        <div>
+            <label>Timeout (ms):</label><br />
+            <input type="number" name="timeout" value="@ViewBag.Timeout" min="500" max="10000" step="500" style="width:100px;padding:5px;" />
+        </div>
+
+        <div>
+            <label>Số lần thử lại (Retries):</label><br />
+            <input type="number" name="retries" value="@ViewBag.Retries" min="1" max="5" style="width:100px;padding:5px;" />
+        </div>
+    </div>  
     <button type="submit" style="padding:5px 15px;">Tra cứu</button>
 </form>
 
@@ -29,5 +44,5 @@
 @if (ViewBag.Result != null)
 {
     <h3>Kết quả:</h3>
-    <pre style="background-color:antiquewhite;color:forestgreen;padding:10px;border-radius:8px;">@ViewBag.Result</pre>
+    <pre style="background-color:black;color:forestgreen;padding:10px;border-radius:8px;">@ViewBag.Result</pre>
 }

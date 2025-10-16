@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace YourProject.Controllers
+namespace PBL4.Controllers
 {
     /// <summary>
     /// Controller cho chức năng scan IP.

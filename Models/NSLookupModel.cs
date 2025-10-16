@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
 namespace PBL_4.Models
@@ -10,14 +11,22 @@ namespace PBL_4.Models
     {
         private static (string server, string address) GetLocalDnsInfo()
         {
-            string serverName = Dns.GetHostName();
+            string serverName = "Không xác định";
             string address = "Không xác định";
 
             try
             {
-                var addrs = Dns.GetHostAddresses(serverName);
-                if (addrs.Length > 0)
-                    address = addrs[0].ToString();
+                var adapters = NetworkInterface.GetAllNetworkInterfaces();
+                foreach (var adapter in adapters)
+                {
+                    var props = adapter.GetIPProperties();
+                    foreach (var dns in props.DnsAddresses)
+                    {
+                        address = dns.ToString();
+                        serverName = "Local DNS Resolver";
+                        return (serverName, address);
+                    }
+                }
             }
             catch { }
 
@@ -37,6 +46,7 @@ namespace PBL_4.Models
 
             try
             {
+                bool isAuthoritative = false;
                 // Nếu nhập là IP → tra ngược (PTR)
                 if (IPAddress.TryParse(input, out IPAddress ip))
                 {
@@ -78,7 +88,32 @@ namespace PBL_4.Models
                             ipv6.Add(ipAddr.ToString());
                     }
 
-                    result += "Non-authoritative answer:\n";
+                    try
+                    {
+                        ProcessStartInfo psi = new ProcessStartInfo
+                        {
+                            FileName = "nslookup",
+                            Arguments = input,
+                            RedirectStandardOutput = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+                        var p = Process.Start(psi);
+                        string nsOutput = p.StandardOutput.ReadToEnd();
+                        p.WaitForExit();
+
+                        if (nsOutput.Contains("Non-authoritative"))
+                            isAuthoritative = false;
+                        else if (nsOutput.Contains("Authoritative"))
+                            isAuthoritative = true;
+                    }
+                    catch
+                    {
+                        // Nếu không chạy được nslookup → coi như non-authoritative
+                        isAuthoritative = false;
+                    }
+
+                    result += (isAuthoritative ? "Authoritative answer:\n" : "Non-authoritative answer:\n");
                     result += $"Name:\t {input}\n";
 
                     // A record
@@ -129,5 +164,43 @@ namespace PBL_4.Models
             result += $"\n\nThời gian truy vấn: {sw.ElapsedMilliseconds} ms";
             return result;
         }
+
+        public static string LookupWithCustomDns(string input, string recordType, string customDns, int timeout = 3000, int retry = 1)
+        {
+            string server = string.IsNullOrWhiteSpace(customDns) ? "Mặc định (Hệ thống)" : customDns;
+            string result = $"Server:\t {server}\nAddress:\t {customDns}\n\n";
+            Stopwatch sw = Stopwatch.StartNew();
+
+            if (string.IsNullOrWhiteSpace(input))
+                return result + "Vui lòng nhập tên miền hoặc địa chỉ IP.";
+
+            try
+            {
+                // Sử dụng nslookup với tham số người dùng chọn
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = "nslookup",
+                    Arguments = $"-timeout={(timeout / 1000)} -retry={retry} {input} {customDns}",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                var p = Process.Start(psi);
+                string nsOutput = p.StandardOutput.ReadToEnd();
+                p.WaitForExit();
+
+                result += nsOutput;
+            }
+            catch (Exception ex)
+            {
+                result += "Lỗi: " + ex.Message;
+            }
+
+            sw.Stop();
+            result += $"\n\nThời gian truy vấn: {sw.ElapsedMilliseconds} ms";
+            return result;
+        }
+
     }
 }

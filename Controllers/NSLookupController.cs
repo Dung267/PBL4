@@ -1,7 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PBL_4.Models;
 using System;
+using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace PBL4.Controllers
 {
@@ -13,83 +17,123 @@ namespace PBL4.Controllers
             return View();
         }
 
-        [HttpPost]
-        public IActionResult Index(string domainOrIp, string recordType)
+        // Lấy thông tin DNS server cục bộ
+        private static (string server, string address) GetLocalDnsInfo()
         {
-            string result = string.Empty;
+            string serverName = "Local DNS Resolver";
+            string address = "Không xác định";
+
+            try
+            {
+                foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    var ipProps = ni.GetIPProperties();
+                    foreach (var dns in ipProps.DnsAddresses)
+                    {
+                        address = dns.ToString();
+                        return (serverName, address);
+                    }
+                }
+            }
+            catch { }
+
+            return (serverName, address);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Index(string domainOrIp, string recordType, string customDns, int timeout = 2000, int retries = 1)
+        {
+            var (localServer, localAddress) = GetLocalDnsInfo();
+            string dnsServer = string.IsNullOrWhiteSpace(customDns) ? localAddress : customDns;
+            string serverName = string.IsNullOrWhiteSpace(customDns) ? localServer : "Custom DNS";
+            string result = $"Server: {(string.IsNullOrWhiteSpace(customDns) ? localServer : "Custom DNS")}\nAddress: {dnsServer}\n\n";
+
 
             try
             {
                 if (string.IsNullOrWhiteSpace(domainOrIp))
                 {
-                    result = "⚠️ Vui lòng nhập tên miền hoặc địa chỉ IP.";
+                    result += "⚠️ Vui lòng nhập tên miền hoặc địa chỉ IP.";
+                }
+                else if (!IsValidDomainOrIp(domainOrIp))
+                {
+                    result += "⚠️ Định dạng không hợp lệ. Vui lòng nhập địa chỉ IP hợp lệ (vd: 8.8.8.8) hoặc tên miền (vd: vnexpress.com).\n";
                 }
                 else
                 {
-                    // Kiểm tra xem là IP hay tên miền
+                    // Kiểm tra là IP hay tên miền
                     if (IPAddress.TryParse(domainOrIp, out IPAddress ip))
                     {
-                        // Reverse lookup
+                        // Reverse lookup (PTR)
                         try
                         {
-                            IPHostEntry hostEntry = Dns.GetHostEntry(ip);
-                            result += $"Name: {hostEntry.HostName}\n";
-                            foreach (var address in hostEntry.AddressList)
-                                result += $"Address: {address}\n";
+                            var entry = await ResolveDnsAsync(() => Dns.GetHostEntry(ip), timeout, retries);
+                            result += "Non-authoritative answer:\n";
+                            result += $"Name: {entry.HostName}\n";
+                            result += $"Address: {ip}\n";
                         }
                         catch
                         {
-                            result = "❌ Không thể tra ngược địa chỉ IP.";
+                            result += "❌ Không thể tra ngược địa chỉ IP.\n";
                         }
                     }
                     else
                     {
-                        // Lookup theo loại bản ghi
-                        IPAddress[] addresses = Dns.GetHostAddresses(domainOrIp);
+                        // Forward lookup
+                        result += "Non-authoritative answer:\n";
+                        result += $"Name: {domainOrIp}\n";
 
-                        if (addresses.Length == 0)
+                        try
                         {
-                            result = "❌ Không tìm thấy kết quả.";
-                        }
-                        else
-                        {
-                            result = $"Name: {domainOrIp}\n";
-                            foreach (var address in addresses)
+                            var addresses = await ResolveDnsAsync(() => Dns.GetHostAddresses(domainOrIp), timeout, retries);
+
+                            if (addresses.Length == 0)
                             {
-                                if (recordType == "A" && address.AddressFamily == AddressFamily.InterNetwork)
-                                    result += $"IPv4: {address}\n";
-                                else if (recordType == "AAAA" && address.AddressFamily == AddressFamily.InterNetworkV6)
-                                    result += $"IPv6: {address}\n";
-                                else if (string.IsNullOrEmpty(recordType)) // mặc định hiển thị cả 2
-                                    result += $"{(address.AddressFamily == AddressFamily.InterNetwork ? "IPv4" : "IPv6")}: {address}\n";
+                                result += "❌ Không tìm thấy kết quả.\n";
+                            }
+                            else
+                            {
+                                foreach (var addr in addresses)
+                                {
+                                    if (recordType == "A" && addr.AddressFamily == AddressFamily.InterNetwork)
+                                        result += $"Address: {addr}\n";
+                                    else if (recordType == "AAAA" && addr.AddressFamily == AddressFamily.InterNetworkV6)
+                                        result += $"IPv6 Address: {addr}\n";
+                                    else if (string.IsNullOrEmpty(recordType))
+                                        result += $"{(addr.AddressFamily == AddressFamily.InterNetwork ? "Address" : "IPv6 Address")}: {addr}\n";
+                                }
                             }
                         }
+                        catch (Exception ex)
+                        {
+                            result += $"❌ Lỗi khi truy vấn DNS: {ex.Message}\n";
+                        }
 
-                        // Nếu chọn CNAME
+                        // CNAME
                         if (recordType == "CNAME")
                         {
                             try
                             {
-                                IPHostEntry hostEntry = Dns.GetHostEntry(domainOrIp);
-                                result += $"\nCanonical Name: {hostEntry.HostName}";
+                                var entry = await ResolveDnsAsync(() => Dns.GetHostEntry(domainOrIp), timeout, retries);
+                                result += $"\nCanonical Name: {entry.HostName}\n";
                             }
                             catch
                             {
-                                result += "\n❌ Không tìm thấy CNAME.";
+                                result += "\n❌ Không tìm thấy CNAME.\n";
                             }
                         }
 
-                        // Nếu chọn PTR
+                        // PTR
                         if (recordType == "PTR")
                         {
                             try
                             {
-                                var entry = Dns.GetHostEntry(domainOrIp);
-                                result = $"Reverse (PTR): {entry.HostName}";
+                                var entry = await ResolveDnsAsync(() => Dns.GetHostEntry(domainOrIp), timeout, retries);
+                                result += $"\nReverse (PTR): {entry.HostName}\n";
                             }
                             catch
                             {
-                                result = "❌ Không thể tra PTR.";
+                                result += "\n❌ Không thể tra PTR.\n";
                             }
                         }
                     }
@@ -97,14 +141,60 @@ namespace PBL4.Controllers
             }
             catch (Exception ex)
             {
-                result = $"⚠️ Lỗi: {ex.Message}";
+                result += $"⚠️ Lỗi: {ex.Message}";
             }
 
             ViewBag.Result = result;
             ViewBag.DomainOrIp = "";
             ViewBag.RecordType = recordType;
+            ViewBag.CustomDns = customDns;
+            ViewBag.Timeout = timeout;
+            ViewBag.Retries = retries;
 
             return View();
+        }
+
+        // Kiểm tra hợp lệ domain hoặc IP
+        private bool IsValidDomainOrIp(string input)
+        {
+            // Là IP thì hợp lệ
+            if (IPAddress.TryParse(input, out _))
+                return true;
+
+            // Regex kiểm tra domain (vd: example.com)
+            string domainPattern = @"^(?!\-)(?:[a-zA-Z0-9\-]{1,63}\.)+[a-zA-Z]{2,}$";
+            return System.Text.RegularExpressions.Regex.IsMatch(input, domainPattern);
+        }
+
+
+        // Hàm POST cũ, giữ lại để tương thích
+
+        [HttpPost]
+        public IActionResult Lookup(string domain, string recordType, string customDns, int timeout, int retry)
+        {
+            string result;
+
+            if (string.IsNullOrWhiteSpace(customDns))
+                result = NSLookupModel.Lookup(domain, recordType); // Gọi hàm cũ
+            else
+                result = NSLookupModel.LookupWithCustomDns(domain, recordType, customDns, timeout, retry);
+
+            ViewBag.Result = result;
+            ViewBag.Domain = "";
+            return View();
+        }
+
+
+        // Hàm chạy DNS có Timeout & Retry
+        private async Task<T> ResolveDnsAsync<T>(Func<T> action, int timeoutMs, int retries)
+        {
+            for (int attempt = 0; attempt < retries; attempt++)
+            {
+                var task = Task.Run(action);
+                if (await Task.WhenAny(task, Task.Delay(timeoutMs)) == task)
+                    return task.Result; // Thành công
+            }
+            throw new TimeoutException("DNS query timed out.");
         }
     }
 }
