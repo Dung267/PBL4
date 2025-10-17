@@ -1,0 +1,77 @@
+﻿@model PBL4.Models.PingResult
+@{
+	ViewData["Title"] = "Ping Tool";
+}
+<link rel="stylesheet" href="~/css/Ping.css" asp-append-version="true" />
+
+<h2>Ping Tool</h2>
+
+<form asp-action="Index" method="post" id="ping-form">
+    <div class="ping_host">
+        <label>Host/Domain:</label>
+        <input type="text" name="host" required />
+    </div>
+
+    <div class="ping_options">
+        <h4 class="ping_option-title">Ping Options</h4>
+
+        <div class="ping_option-item">
+            <label>
+                <input type="checkbox" name="Continuous" value="true" /> Continuous (-t)
+            </label>
+        </div>
+
+        <div class="ping_option-item">
+            <label>
+                Count (-n):
+                <input type="number" name="Count" min="1" value="4" />
+            </label>
+        </div>
+
+        <div class="ping_option-item">
+            <label>
+                Buffer Size (-l):
+                <input type="number" name="BufferSize" min="1" value="32" />
+            </label>
+        </div>
+
+        <div class="ping_option-item">
+            <label>
+                Timeout (ms) (-w):
+                <input type="number" name="Timeout" min="1" value="4000" />
+            </label>
+        </div>
+
+        <div class="ping_option-item">
+            <label>
+                TTL (-i):
+                <input type="number" name="Ttl" min="1" max="255" value="128" />
+            </label>
+        </div>
+    </div>
+
+    <button type="submit">Ping</button>
+</form>
+
+<form asp-action="Stop" method="post" style="margin-top:10px;">
+    <button type="submit">Stop</button>
+</form>
+
+@if (Model.Replies.Any())
+{
+    <h3>Pinging @Model.Target</h3>
+    <pre>
+        @foreach (var line in Model.Replies)
+        {
+            @line
+        <br />
+        }
+        </pre>
+
+    <p>Ping statistics for @Model.Target:</p>
+    <pre>
+            Packets: Sent = @Model.Sent, Received = @Model.Received, Lost = @Model.Lost (@(Model.Sent > 0 ? Model.Lost * 100 / Model.Sent : 0)% loss)
+            Approximate round trip times in milli-seconds:
+                Minimum = @Model.MinTime ms, Maximum = @Model.MaxTime ms, Average = @Model.AvgTime ms
+        </pre>
+}

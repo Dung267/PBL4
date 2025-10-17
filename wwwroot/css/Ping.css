@@ -1,0 +1,28 @@
+﻿#ping-form{
+    background-color:#fff;
+}
+.ping_host{
+    margin-bottom:10px;
+    font-size: 18px;
+}
+.ping-options {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.ping_option-title{
+    font-size: 16px;
+    font-weight: 500;
+    margin-right: 10px;
+    white-space: nowrap;
+
+}
+.ping_option-item{
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+    white-space: nowrap;
+    padding: 5px;
+}

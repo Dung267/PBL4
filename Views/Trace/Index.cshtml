@@ -1,0 +1,99 @@
+﻿@model TracertResult
+@{
+    ViewData["Title"] = "Tracert Tool (P/Invoke)";
+    // Lấy options hiện tại, hoặc tạo mới nếu chưa có
+    TracertOptions options = Model?.Options ?? new TracertOptions();
+}
+
+<h2>Tracert Tool (Tự Xây Dựng - P/Invoke)</h2>
+
+@* Form nhập liệu và tùy chọn *@
+@using (Html.BeginForm("Index", "Trace", FormMethod.Post, new { id = "tracertForm" }))
+{
+    @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+
+    <div class="form-group">
+        @Html.LabelFor(m => options.Host, "Host/IP:")
+        @Html.TextBoxFor(m => options.Host, new { @class = "form-control", required = "required" })
+        @Html.ValidationMessageFor(m => options.Host, "", new { @class = "text-danger" })
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 form-group">
+            @Html.LabelFor(m => options.MaxHops)
+            @Html.TextBoxFor(m => options.MaxHops, new { @class = "form-control", type = "number" })
+            @Html.ValidationMessageFor(m => options.MaxHops, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="col-md-4 form-group">
+            @Html.LabelFor(m => options.TimeoutMs)
+            @Html.TextBoxFor(m => options.TimeoutMs, new { @class = "form-control", type = "number" })
+            @Html.ValidationMessageFor(m => options.TimeoutMs, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="col-md-4 form-group form-check mt-4">
+            @Html.CheckBoxFor(m => options.NoReverseDns, new { @class = "form-check-input" })
+            @Html.LabelFor(m => options.NoReverseDns, new { @class = "form-check-label" })
+            <small class="form-text text-muted">Tùy chọn -d</small>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Run Tracert</button>
+}
+
+@if (!string.IsNullOrEmpty(Model?.ErrorMessage))
+{
+    <div class="alert alert-danger mt-3">
+        @Model.ErrorMessage
+    </div>
+}
+
+@* Phần Hiển thị Kết quả *@
+@if (Model != null && Model.Hops.Count > 0 && string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <hr />
+
+    <h3>Kết quả Tracert</h3>
+    <div style="font-family: monospace; white-space: pre; border: 1px solid #ccc; padding: 10px; background-color: #f8f8f8;">
+        <span>Tracing route to @Model.TargetHost [@Model.TargetIP] over a maximum of @Model.MaxHops hops:</span>
+        <br />
+        <br />
+
+        <table class="table table-sm" style="font-size: 0.9em; width: 100%;">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">Hop</th>
+                    <th style="width: 15%;">@Html.Raw(Model.Options.NoReverseDns ? "Time 1" : "Time 1")</th>
+                    <th style="width: 15%;">Time 2</th>
+                    <th style="width: 15%;">Time 3</th>
+                    <th style="width: 50%;">Địa chỉ/Host</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var hop in Model.Hops)
+                {
+                    string addressInfo = hop.IPAddress != null
+                    ? (Model.Options.NoReverseDns || hop.HostName == hop.IPAddress.ToString()
+                    ? hop.IPAddress.ToString()
+                    : $"{hop.HostName} [{hop.IPAddress}]")
+                    : "* * * Request timed out.";
+
+                    string formatTime(string time) => time == "*" ? "*" : time.Replace(" ms", "");
+
+                    <tr>
+                        <td>@hop.Hop</td>
+                        <td>@formatTime(hop.Time1)</td>
+                        <td>@formatTime(hop.Time2)</td>
+                        <td>@formatTime(hop.Time3)</td>
+                        <td>@addressInfo</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (Model.Hops.Count > 0 && Model.Hops.Last().IsDestination)
+        {
+            <span>Trace Complete.</span>
+        }
+    </div>
+}
