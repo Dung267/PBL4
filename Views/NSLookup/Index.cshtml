@@ -1,48 +1,204 @@
-﻿@{
-    ViewData["Title"] = "NSLookup - Tra cứu DNS";
+﻿@model dynamic
+@{
+    ViewData["Title"] = "NSLookup Tool";
 }
 
-<h2>NSLookup - Tra cứu DNS</h2>
+<link rel="stylesheet" href="~/css/Ping.css" asp-append-version="true" />
+<style>
+    select.form-control, input[type="number"].form-control {
+        background-color: var(--primary-bgcard-color);
+        color: #fff;
+        border: 1px solid #555;
+    }
 
-<form method="post" asp-controller="NSLookup" asp-action="Index">
-    <div style="margin-bottom:10px;">
-        <label>Nhập tên miền hoặc IP:</label><br />
-        <input type="text" name="domainOrIp" value="@ViewBag.DomainOrIp" style="width:300px;padding:5px;" />
+        select.form-control option {
+            background-color: #1a202c;
+        }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .ping-container {
+        padding-bottom: 100px; /* Tạo khoảng trống lớn ở dưới cùng trang */
+        min-height: 80vh; /* Đảm bảo trang đủ dài */
+    }
+
+    .ping-results-section {
+        position: relative;
+        z-index: 100; /* Đảm bảo nổi lên trên các thành phần khác */
+        margin-top: 30px;
+        clear: both;
+        display: block; /* Đảm bảo nó chiếm dòng riêng */
+    }
+
+    .ping-result {
+        max-height: 500px; /* Chiều cao tối đa */
+        overflow-y: auto; /* Hiện thanh cuộn nếu nội dung quá dài */
+        overflow-x: auto; /* Hiện thanh cuộn ngang nếu dòng quá dài */
+        padding: 20px; /* Khoảng cách đệm bên trong để chữ không dính viền */
+        margin-bottom: 50px; /* Khoảng cách an toàn phía dưới khung */
+        /* Đảm bảo nền và chữ dễ đọc */
+        background-color: #0d1117;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        white-space: pre-wrap; /* Tự động xuống dòng nếu quá dài */
+        word-wrap: break-word;
+    }
+</style>
+
+<div class="ping-container">
+    <div class="ping-header">
+        <h2 class="ping-title">NSLookup Tool</h2>
     </div>
 
-    <div style="margin-bottom:10px;">
-        <label>Chọn loại bản ghi DNS:</label><br />
-        <select name="recordType" style="width:200px;padding:5px;">
-            <option value="">-- Mặc định (A + AAAA) --</option>
-            <option value="A" selected="@(ViewBag.RecordType == "A")">A (IPv4)</option>
-            <option value="AAAA" selected="@(ViewBag.RecordType == "AAAA")">AAAA (IPv6)</option>
-            <option value="CNAME" selected="@(ViewBag.RecordType == "CNAME")">CNAME</option>
-            <option value="PTR" selected="@(ViewBag.RecordType == "PTR")">PTR (Reverse lookup)</option>
-        </select>
+    <div class="mode-selector">
+        <button class="btn btn-primary mode-btn active" onclick="showMode('gui')">Chế độ giao diện</button>
+        <button class="btn btn-secondary mode-btn" onclick="showMode('command')">Chế độ Lệnh</button>
     </div>
-    <div style="display: flex; gap: 20px; align-items: flex-end; margin-bottom:15px;">
-        <div>
-            <label>Máy chủ DNS (tùy chọn):</label><br />
-            <input type="text" name="customDns" value="@ViewBag.CustomDns" placeholder="8.8.8.8" style="width:200px;padding:5px;" />
-        </div>
 
-        <div>
-            <label>Timeout (ms):</label><br />
-            <input type="number" name="timeout" value="@ViewBag.Timeout" min="500" max="10000" step="500" style="width:100px;padding:5px;" />
-        </div>
+    <div id="gui-mode" class="ping-form-section">
+        <h2>Chế độ Giao diện (GUI)</h2>
+        <form asp-action="Index" method="post" id="guiForm">
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="form-group">
+                        <label class="form-label" for="domainOrIp">🌐 Domain/IP:</label>
+                        <input type="text" name="domainOrIp" id="domainOrIp" class="form-control"
+                               value="@ViewBag.DomainOrIp" placeholder="vd: google.com..." required />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label" for="customDns">📡 DNS Server:</label>
+                        <input type="text" name="customDns" id="customDns" class="form-control"
+                               value="@ViewBag.CustomDns" placeholder="Mặc định (hoặc nhập 8.8.8.8)..." />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label class="form-label" for="recordType">📝 Record Type:</label>
+                        <select name="recordType" id="recordType" class="form-control">
+                            <option value="A" selected="@(ViewBag.RecordType == "A")">A (IPv4)</option>
+                            <option value="AAAA" selected="@(ViewBag.RecordType == "AAAA")">AAAA (IPv6)</option>
+                            <option value="MX" selected="@(ViewBag.RecordType == "MX")">MX (Mail)</option>
+                            <option value="NS" selected="@(ViewBag.RecordType == "NS")">NS (Name Server)</option>
+                            <option value="CNAME" selected="@(ViewBag.RecordType == "CNAME")">CNAME (Alias)</option>
+                            <option value="TXT" selected="@(ViewBag.RecordType == "TXT")">TXT (Text)</option>
+                            <option value="PTR" selected="@(ViewBag.RecordType == "PTR")">PTR (Reverse)</option>
+                            <option value="SOA" selected="@(ViewBag.RecordType == "SOA")">SOA</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
 
-        <div>
-            <label>Số lần thử lại (Retries):</label><br />
-            <input type="number" name="retries" value="@ViewBag.Retries" min="1" max="5" style="width:100px;padding:5px;" />
-        </div>
-    </div>  
-    <button type="submit" style="padding:5px 15px;">Tra cứu</button>
-</form>
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label class="form-label" for="timeout">⏳ Timeout (ms):</label>
+                        <input type="number" name="timeout" id="timeout" class="form-control"
+                               value="@(ViewBag.Timeout ?? 5000)" min="1000" placeholder="Mặc định: 5000" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label class="form-label" for="retries">🔄 Retries:</label>
+                        <input type="number" name="retries" id="retries" class="form-control"
+                               value="@(ViewBag.Retries ?? 1)" min="1" max="10" />
+                    </div>
+                </div>
+            </div>
 
-<hr />
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary">🔍 Tra cứu DNS</button>
+                </div>
+                <div class="col-md-4">
+                    <button type="button" id="generateCommandBtn" class="btn btn-info">Xem lệnh dòng lệnh</button>
+                </div>
+            </div>
+        </form>
 
-@if (ViewBag.Result != null)
-{
-    <h3>Kết quả:</h3>
-    <pre style="background-color:black;color:forestgreen;padding:10px;border-radius:8px;">@ViewBag.Result</pre>
+        <div id="commandOutput" class="command-output hidden"></div>
+    </div>
+
+    <div id="command-mode" class="ping-form-section hidden">
+        <h2>Chế độ Lệnh (Command)</h2>
+        <form asp-action="Command" method="post">
+            <div class="form-group">
+                <label class="form-label" for="command">Nhập Lệnh NSLookup:</label>
+                <input type="text" name="commandInput" class="form-control"
+                       value="@ViewBag.CommandInput"
+                       placeholder="Ví dụ: nslookup -type=MX -timeout=5 google.com 8.8.8.8" required />
+            </div>
+            <button type="submit" class="btn btn-success">🚀 Run Command</button>
+            <p class="command-hint mt-2">Lưu ý: Timeout trong lệnh tính bằng GIÂY (vd: -timeout=5)</p>
+        </form>
+    </div>
+
+    <div class="ping-results-section">
+        <h2 style="color: #fff; font-size: 20px;">KẾT QUẢ TRA CỨU</h2>
+        @if (ViewBag.Result != null)
+        {
+            <pre class="ping-result">@ViewBag.Result</pre>
+        }
+        else
+        {
+            <pre class="ping-result" style="color: #888;">Kết quả sẽ hiển thị ở đây...</pre>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function showMode(mode) {
+            // Ẩn hết
+            $('#gui-mode').addClass('hidden');
+            $('#command-mode').addClass('hidden');
+            $('.mode-btn').removeClass('active');
+
+            // Hiện cái cần hiện
+            if (mode === 'gui') {
+                $('#gui-mode').removeClass('hidden');
+                $('.mode-btn:contains("Giao diện")').addClass('active');
+            } else if (mode === 'command') {
+                $('#command-mode').removeClass('hidden');
+                $('.mode-btn:contains("Lệnh")').addClass('active');
+            }
+        }
+
+        $(document).ready(function () {
+            // Lấy mode từ Controller trả về (Server Side Rendering)
+            // Nếu null (lần đầu vào) thì mặc định là 'gui'
+            var activeMode = '@(ViewBag.ActiveMode ?? "gui")';
+            showMode(activeMode);
+
+            // --- XỬ LÝ NÚT XEM CÂU LỆNH (Giữ nguyên) ---
+            $('#generateCommandBtn').click(function (e) {
+                e.preventDefault();
+                var domain = $('#domainOrIp').val();
+                var dns = $('#customDns').val();
+                var type = $('#recordType').val() || "A";
+                var timeoutMs = $('#timeout').val();
+                if (!timeoutMs) timeoutMs = 5000;
+                var timeoutSec = Math.ceil(timeoutMs / 1000);
+
+                if (!domain) {
+                    $('#commandOutput').removeClass('hidden').text("⚠️ Vui lòng nhập Domain/IP trước.");
+                    return;
+                }
+
+                var cmd = "nslookup";
+                if (type !== "A") cmd += " -type=" + type;
+                cmd += " -timeout=" + timeoutSec;
+                cmd += " " + domain;
+                if (dns) cmd += " " + dns;
+
+                $('#commandOutput').removeClass('hidden').text(cmd);
+            });
+        });
+    </script>
 }

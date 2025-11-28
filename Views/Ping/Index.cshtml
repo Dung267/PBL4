@@ -1,77 +1,211 @@
 ﻿@model PBL4.Models.PingResult
+
 @{
-	ViewData["Title"] = "Ping Tool";
+    ViewData["Title"] = "Ping";
 }
+
 <link rel="stylesheet" href="~/css/Ping.css" asp-append-version="true" />
 
-<h2>Ping Tool</h2>
+<div class="ping-container">
+    <div class="ping-header">
+        <h2 class="ping-title">Ping Tool</h2>
+    </div>
+    <div class="mode-selector">
+        <button class="btn btn-primary mode-btn active" onclick="showMode('gui')">Chế độ giao diện</button>
+        <button class="btn btn-secondary mode-btn" onclick="showMode('command')">Chế độ Lệnh</button>
+    </div>
+    <div id="gui-mode" class="ping-form-section">
+        <h2>Chế độ Giao diện (GUI)</h2>
+        <form asp-action="Index" method="post" id="guiForm">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label" for="host">📍 Host/IP:</label>
+                        <input type="text" name="host" id="gui_host" class="form-control" value="8.8.8.8" placeholder="Nhập địa chỉ IP hoặc tên miền..." required />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label class="form-label" for="options_Count">Count (-n):</label>
+                        <input type="number" name="options.Count" id="options_Count" class="form-control" value="4" min="1" max="100" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label class="form-label" for="options_Timeout">Timeout (-w):</label>
+                        <input type="number" name="options.Timeout" id="options_Timeout" class="form-control" value="5000" min="100" max="30000" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label class="form-label" for="options_BufferSize">BufferSize (-l):</label>
+                        <input type="number" name="options.BufferSize" id="options_BufferSize" class="form-control" value="32" min="1" max="65500" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label class="form-label" for="options_Ttl">TTL (-i):</label>
+                        <input type="number" name="options.Ttl" id="options_Ttl" class="form-control" value="128" min="1" max="255" />
+                    </div>
+                </div>
+            </div>
 
-<form asp-action="Index" method="post" id="ping-form">
-    <div class="ping_host">
-        <label>Host/Domain:</label>
-        <input type="text" name="host" required />
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label class="form-label" style="margin-bottom: 8px;" for="options_SourceAddress">Source IP (-S):</label>
+                        <input type="text" name="options.SourceAddress" id="options_SourceAddress" class="form-control" placeholder="Tùy chọn: IP nguồn..." />
+                    </div>
+                </div>
+                <div class="col-md-9 d-flex flex-wrap align-items-center">
+                    <div class="form-check me-4">
+                        <label class="form-check-label" for="options_ResolveHostname">🌐 Resolve Hostname (-a)</label>
+                        <input type="checkbox" name="options.ResolveHostname" id="options_ResolveHostname" value="true" class="form-check-input" />
+                    </div>
+                    <div class="form-check me-4">
+                        <label class="form-check-label" for="options_ForceIpv4">IPv4 Only (-4)</label>
+                        <input type="checkbox" name="options.ForceIpv4" id="options_ForceIpv4" value="true" class="form-check-input" />
+                    </div>
+                    <div class="form-check me-4">
+                        <label class="form-check-label" for="options_ForceIpv6">IPv6 Only (-6)</label>
+                        <input type="checkbox" name="options.ForceIpv6" id="options_ForceIpv6" value="true" class="form-check-input" />
+                    </div>
+                    <div class="form-check me-5">
+                        <label class="form-check-label" for="options_DontFragment">🚫 Don't Fragment (-f)</label>
+                        <input type="checkbox" name="options.DontFragment" id="options_DontFragment" value="true" class="form-check-input" />
+                    </div>
+                    <div class="form-check me-5" style="margin-left: 4px;">
+                        <label class="form-check-label" for="options_Continuous">🔄 Ping liên tục (-t)</label>
+                        <input type="checkbox" name="options.Continuous" id="options_Continuous" value="true" class="form-check-input" />
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary">🚀 Start Ping</button>
+                </div>
+                <div class="col-md-4">
+                    <button type="button" id="generateCommandBtn" class="btn btn-info">Xem lệnh dòng lệnh</button>
+                </div>
+            </div>
+        </form>
+
+        <div id="commandOutput" class="command-output hidden"></div>
     </div>
 
-    <div class="ping_options">
-        <h4 class="ping_option-title">Ping Options</h4>
-
-        <div class="ping_option-item">
-            <label>
-                <input type="checkbox" name="Continuous" value="true" /> Continuous (-t)
-            </label>
-        </div>
-
-        <div class="ping_option-item">
-            <label>
-                Count (-n):
-                <input type="number" name="Count" min="1" value="4" />
-            </label>
-        </div>
-
-        <div class="ping_option-item">
-            <label>
-                Buffer Size (-l):
-                <input type="number" name="BufferSize" min="1" value="32" />
-            </label>
-        </div>
-
-        <div class="ping_option-item">
-            <label>
-                Timeout (ms) (-w):
-                <input type="number" name="Timeout" min="1" value="4000" />
-            </label>
-        </div>
-
-        <div class="ping_option-item">
-            <label>
-                TTL (-i):
-                <input type="number" name="Ttl" min="1" max="255" value="128" />
-            </label>
-        </div>
+    <div id="command-mode" class="ping-form-section hidden">
+        <h2>Chế độ Lệnh (Command)</h2>
+        <form asp-action="Command" method="post">
+            <div class="form-group">
+                <label class="form-label" for="command">Nhập Lệnh Ping:</label>
+                <input type="text" name="command" class="form-control" placeholder="Ví dụ: ping google.com -t -n 10 -w 1000 -4 -a" required />
+            </div>
+            <button type="submit" class="btn btn-success">🚀 Start Ping</button>
+        </form>
     </div>
 
-    <button type="submit">Ping</button>
-</form>
+    <div class="text-center mt-4">
+        <form asp-action="Stop" method="post">
+            <button type="submit" class="btn btn-danger">🛑 Stop Ping</button>
+        </form>
+    </div>
+    @if (Model != null && Model.Target != null)
+    {
+        <div class="ping-results-section">
+            <h2 style="color: #fff; font-size: 20px;">KẾT QUẢ PING</h2>
 
-<form asp-action="Stop" method="post" style="margin-top:10px;">
-    <button type="submit">Stop</button>
-</form>
+            @if (Model.Replies.Count > 0)
+            {
+                <pre class="ping-result">
+                <strong>🔍 Pinging @Model.Target:</strong>
+                    @foreach (var reply in Model.Replies)
+                    {
+                        @reply
+                        <text>&#10;</text>
+                    }
+                                </pre>
 
-@if (Model.Replies.Any())
-{
-    <h3>Pinging @Model.Target</h3>
-    <pre>
-        @foreach (var line in Model.Replies)
-        {
-            @line
-        <br />
+                @if (Model.Sent > 0)
+                {
+                    <div class="ping-stats">
+                        <p><strong>Ping statistics for @Model.Target</strong></p>
+                        <p><strong>Packets:</strong> Send = @Model.Sent, Received = @Model.Received, Lost = @(Model.Sent - Model.Received) (@((Model.Sent - Model.Received) * 100 / Model.Sent)%)</p>
+                        <p><strong>Approximate round trip times in milli-seconds:</strong></p>
+                        <p>Minimum = @Model.MinTime ms, Maximum = @Model.MaxTime ms, Average = @Model.AvgTime ms</p>
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function showMode(mode) {
+            // Ẩn tất cả các section
+            $('#gui-mode').addClass('hidden');
+            $('#command-mode').addClass('hidden');
+
+            // Xóa active class từ tất cả các nút
+            $('.mode-btn').removeClass('active');
+
+            // Hiển thị section được chọn và thêm active class cho nút tương ứng
+            if (mode === 'gui') {
+                $('#gui-mode').removeClass('hidden');
+                $('.mode-btn:contains("Giao diện")').addClass('active');
+            } else if (mode === 'command') {
+                $('#command-mode').removeClass('hidden');
+                $('.mode-btn:contains("Lệnh")').addClass('active');
+            }
         }
-        </pre>
 
-    <p>Ping statistics for @Model.Target:</p>
-    <pre>
-            Packets: Sent = @Model.Sent, Received = @Model.Received, Lost = @Model.Lost (@(Model.Sent > 0 ? Model.Lost * 100 / Model.Sent : 0)% loss)
-            Approximate round trip times in milli-seconds:
-                Minimum = @Model.MinTime ms, Maximum = @Model.MaxTime ms, Average = @Model.AvgTime ms
-        </pre>
+        $(document).ready(function () {
+            // Hiển thị GUI mode mặc định
+        @if (Model?.Target == null)
+        {
+            <text>showMode('gui');</text>
+        }
+
+                // Xử lý sự kiện generate command
+                $('#generateCommandBtn').click(function (e) {
+                    e.preventDefault();
+                    var form = $('#guiForm');
+                    var commandOutput = $('#commandOutput');
+
+                    // Lấy tất cả dữ liệu từ form, bao gồm cả các checkbox chưa check
+                    var formData = form.serializeArray();
+                    // Thêm giá trị false cho các checkbox không được chọn
+                    $('input[type=checkbox]', form).each(function () {
+                        if (this.name.startsWith('options.') && !this.checked) {
+                            formData.push({ name: this.name, value: 'false' });
+                        }
+                    });
+
+                    commandOutput.removeClass('hidden').text('🔄 Đang tạo lệnh...');
+
+                    $.ajax({
+                        url: '@Url.Action("GenerateCommand", "Ping")',
+                        type: 'POST',
+                        // Sử dụng mảng formData đã chỉnh sửa
+                        data: $.param(formData),
+                        headers: {
+                            'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                        },
+                        success: function (response) {
+                            if (response.success) {
+                                commandOutput.text(response.command);
+                            } else {
+                                commandOutput.text('Lỗi: ' + response.command);
+                            }
+                        },
+                        error: function () {
+                            commandOutput.text('Lỗi kết nối khi tạo lệnh.');
+                        }
+                    });
+                });
+        });
+    </script>
+
+    @Html.AntiForgeryToken()
 }

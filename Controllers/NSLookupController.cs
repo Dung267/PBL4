@@ -1,10 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using PBL_4.Models;
+using PBL4.Services;
 using System;
-using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
-using System.Net.Sockets;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace PBL4.Controllers
@@ -14,40 +13,99 @@ namespace PBL4.Controllers
         [HttpGet]
         public IActionResult Index()
         {
+            // Mặc định vào là GUI
+            ViewBag.ActiveMode = "gui";
+            ViewBag.Timeout = 5000;
+            ViewBag.Retries = 1;
             return View();
         }
 
-        // Lấy thông tin DNS server cục bộ
-        private static (string server, string address) GetLocalDnsInfo()
+        // --- XỬ LÝ GIAO DIỆN (GUI) ---
+        [HttpPost]
+        public async Task<IActionResult> Index(string domainOrIp, string recordType, string customDns, int? timeout, int retries = 1)
         {
-            string serverName = "Local DNS Resolver";
-            string address = "Không xác định";
+            // Gọi hàm xử lý logic chung
+            await ExecuteLookup(domainOrIp, recordType, customDns, timeout, retries);
 
-            try
-            {
-                foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
-                {
-                    var ipProps = ni.GetIPProperties();
-                    foreach (var dns in ipProps.DnsAddresses)
-                    {
-                        address = dns.ToString();
-                        return (serverName, address);
-                    }
-                }
-            }
-            catch { }
+            // Đánh dấu để View biết cần hiển thị tab GUI
+            ViewBag.ActiveMode = "gui";
 
-            return (serverName, address);
+            return View("Index");
         }
 
+        // --- XỬ LÝ DÒNG LỆNH (COMMAND) ---
         [HttpPost]
-        public async Task<IActionResult> Index(string domainOrIp, string recordType, string customDns, int timeout = 2000, int retries = 1)
+        public async Task<IActionResult> Command(string commandInput)
         {
+            string domain = "";
+            string dns = "";
+            string type = "A";
+            int timeoutMs = 5000;
+
+            if (string.IsNullOrWhiteSpace(commandInput))
+            {
+                ViewBag.Result = "⚠️ Vui lòng nhập câu lệnh.";
+            }
+            else
+            {
+                try
+                {
+                    // Parse lệnh
+                    var parts = commandInput.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var part in parts)
+                    {
+                        string p = part.ToLower();
+                        if (p == "nslookup") continue;
+
+                        if (p.StartsWith("-type=") || p.StartsWith("-q=") || p.StartsWith("-querytype="))
+                        {
+                            var split = part.Split('=');
+                            if (split.Length > 1) type = split[1].ToUpper();
+                        }
+                        else if (p.StartsWith("-timeout="))
+                        {
+                            var split = part.Split('=');
+                            if (split.Length > 1 && int.TryParse(split[1], out int seconds))
+                            {
+                                timeoutMs = seconds * 1000;
+                            }
+                        }
+                        else if (IsValidDomainOrIp(part))
+                        {
+                            if (string.IsNullOrEmpty(domain)) domain = part;
+                            else dns = part;
+                        }
+                    }
+
+                    // Gọi hàm xử lý logic chung
+                    await ExecuteLookup(domain, type, dns, timeoutMs, 1);
+                }
+                catch
+                {
+                    ViewBag.Result = "⚠️ Lỗi cú pháp lệnh.";
+                }
+            }
+
+            // Đánh dấu để View biết cần hiển thị tab COMMAND
+            ViewBag.ActiveMode = "command";
+
+            // Trả lại câu lệnh người dùng vừa nhập để không bị mất
+            ViewBag.CommandInput = commandInput;
+
+            return View("Index");
+        }
+
+        // --- HÀM LOGIC CHUNG (Dùng cho cả 2 chế độ) ---
+        private async Task ExecuteLookup(string domainOrIp, string recordType, string customDns, int? timeout, int retries)
+        {
+            int timeoutVal = timeout ?? 5000;
+            if (string.IsNullOrEmpty(recordType)) recordType = "A";
+
             var (localServer, localAddress) = GetLocalDnsInfo();
             string dnsServer = string.IsNullOrWhiteSpace(customDns) ? localAddress : customDns;
             string serverName = string.IsNullOrWhiteSpace(customDns) ? localServer : "Custom DNS";
-            string result = $"Server: {(string.IsNullOrWhiteSpace(customDns) ? localServer : "Custom DNS")}\nAddress: {dnsServer}\n\n";
 
+            string result = $"Server: {serverName}\nAddress: {dnsServer}\n\n";
 
             try
             {
@@ -57,144 +115,66 @@ namespace PBL4.Controllers
                 }
                 else if (!IsValidDomainOrIp(domainOrIp))
                 {
-                    result += "⚠️ Định dạng không hợp lệ. Vui lòng nhập địa chỉ IP hợp lệ (vd: 8.8.8.8) hoặc tên miền (vd: vnexpress.com).\n";
+                    result += "⚠️ Định dạng không hợp lệ.";
+                }
+                else if (!string.IsNullOrWhiteSpace(customDns) && !IPAddress.TryParse(customDns, out _))
+                {
+                    result += "⚠️ Địa chỉ DNS Server không hợp lệ.";
                 }
                 else
                 {
-                    // Kiểm tra là IP hay tên miền
-                    if (IPAddress.TryParse(domainOrIp, out IPAddress ip))
-                    {
-                        // Reverse lookup (PTR)
-                        try
-                        {
-                            var entry = await ResolveDnsAsync(() => Dns.GetHostEntry(ip), timeout, retries);
-                            result += "Non-authoritative answer:\n";
-                            result += $"Name: {entry.HostName}\n";
-                            result += $"Address: {ip}\n";
-                        }
-                        catch
-                        {
-                            result += "❌ Không thể tra ngược địa chỉ IP.\n";
-                        }
-                    }
-                    else
-                    {
-                        // Forward lookup
-                        result += "Non-authoritative answer:\n";
-                        result += $"Name: {domainOrIp}\n";
+                    if (IPAddress.TryParse(domainOrIp, out _) && recordType != "PTR")
+                        recordType = "PTR";
 
-                        try
-                        {
-                            var addresses = await ResolveDnsAsync(() => Dns.GetHostAddresses(domainOrIp), timeout, retries);
-
-                            if (addresses.Length == 0)
-                            {
-                                result += "❌ Không tìm thấy kết quả.\n";
-                            }
-                            else
-                            {
-                                foreach (var addr in addresses)
-                                {
-                                    if (recordType == "A" && addr.AddressFamily == AddressFamily.InterNetwork)
-                                        result += $"Address: {addr}\n";
-                                    else if (recordType == "AAAA" && addr.AddressFamily == AddressFamily.InterNetworkV6)
-                                        result += $"IPv6 Address: {addr}\n";
-                                    else if (string.IsNullOrEmpty(recordType))
-                                        result += $"{(addr.AddressFamily == AddressFamily.InterNetwork ? "Address" : "IPv6 Address")}: {addr}\n";
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            result += $"❌ Lỗi khi truy vấn DNS: {ex.Message}\n";
-                        }
-
-                        // CNAME
-                        if (recordType == "CNAME")
-                        {
-                            try
-                            {
-                                var entry = await ResolveDnsAsync(() => Dns.GetHostEntry(domainOrIp), timeout, retries);
-                                result += $"\nCanonical Name: {entry.HostName}\n";
-                            }
-                            catch
-                            {
-                                result += "\n❌ Không tìm thấy CNAME.\n";
-                            }
-                        }
-
-                        // PTR
-                        if (recordType == "PTR")
-                        {
-                            try
-                            {
-                                var entry = await ResolveDnsAsync(() => Dns.GetHostEntry(domainOrIp), timeout, retries);
-                                result += $"\nReverse (PTR): {entry.HostName}\n";
-                            }
-                            catch
-                            {
-                                result += "\n❌ Không thể tra PTR.\n";
-                            }
-                        }
-                    }
+                    string lookupResult = await DnsLookupService.LookupWithSocket(domainOrIp, recordType, dnsServer, timeoutVal, retries);
+                    result += lookupResult;
                 }
             }
             catch (Exception ex)
             {
-                result += $"⚠️ Lỗi: {ex.Message}";
+                result += $"⚠️ Lỗi hệ thống: {ex.Message}";
             }
 
+            // Gán dữ liệu vào ViewBag để trả về View
             ViewBag.Result = result;
-            ViewBag.DomainOrIp = "";
+            ViewBag.DomainOrIp = domainOrIp;
             ViewBag.RecordType = recordType;
             ViewBag.CustomDns = customDns;
-            ViewBag.Timeout = timeout;
+            ViewBag.Timeout = timeoutVal;
             ViewBag.Retries = retries;
-
-            return View();
         }
 
-        // Kiểm tra hợp lệ domain hoặc IP
+        // --- CÁC HÀM HELPER ---
+        private static (string server, string address) GetLocalDnsInfo()
+        {
+            string serverName = "UnKnown";
+            string address = "8.8.8.8";
+            try
+            {
+                foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (ni.OperationalStatus != OperationalStatus.Up) continue;
+                    var ipProps = ni.GetIPProperties();
+                    foreach (var dns in ipProps.DnsAddresses)
+                    {
+                        if (dns.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                        {
+                            address = dns.ToString();
+                            return (serverName, address);
+                        }
+                    }
+                }
+            }
+            catch { }
+            return (serverName, address);
+        }
+
         private bool IsValidDomainOrIp(string input)
         {
-            // Là IP thì hợp lệ
-            if (IPAddress.TryParse(input, out _))
-                return true;
-
-            // Regex kiểm tra domain (vd: example.com)
+            if (string.IsNullOrWhiteSpace(input)) return false;
+            if (IPAddress.TryParse(input, out _)) return true;
             string domainPattern = @"^(?!\-)(?:[a-zA-Z0-9\-]{1,63}\.)+[a-zA-Z]{2,}$";
-            return System.Text.RegularExpressions.Regex.IsMatch(input, domainPattern);
-        }
-
-
-        // Hàm POST cũ, giữ lại để tương thích
-
-        [HttpPost]
-        public IActionResult Lookup(string domain, string recordType, string customDns, int timeout, int retry)
-        {
-            string result;
-
-            if (string.IsNullOrWhiteSpace(customDns))
-                result = NSLookupModel.Lookup(domain, recordType); // Gọi hàm cũ
-            else
-                result = NSLookupModel.LookupWithCustomDns(domain, recordType, customDns, timeout, retry);
-
-            ViewBag.Result = result;
-            ViewBag.Domain = "";
-            return View();
-        }
-
-
-        // Hàm chạy DNS có Timeout & Retry
-        private async Task<T> ResolveDnsAsync<T>(Func<T> action, int timeoutMs, int retries)
-        {
-            for (int attempt = 0; attempt < retries; attempt++)
-            {
-                var task = Task.Run(action);
-                if (await Task.WhenAny(task, Task.Delay(timeoutMs)) == task)
-                    return task.Result; // Thành công
-            }
-            throw new TimeoutException("DNS query timed out.");
+            return Regex.IsMatch(input, domainPattern);
         }
     }
 }

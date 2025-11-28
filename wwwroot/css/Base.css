@@ -1,0 +1,219 @@
+﻿:root {
+    --primary-color-hover: #73b64f;
+    --primary-color: #73b64f;
+    --primary-text-color: #fff;
+    --primary-bgcard-color: linear-gradient(206.09deg, #2c2c2d 13.43%, #1a1a1e 80.64%);
+    --title-color: rgba(255,255,255,0.7);
+}
+/* home*/
+.body {
+    padding: 0;
+    margin: 0;
+}
+h1, p{
+    margin: 0;
+    padding: 0;
+
+}
+
+.container-custom {
+    margin: 100px 50px;
+}
+.home-title{
+    text-transform: uppercase;
+    font-weight: 800;
+}
+.home-desc{
+    font-size: 20px;
+    color: #fff;
+    line-height: 1.8;
+    margin-top: 12px;
+}
+.list-group-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+    .list-group-item .item{
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+
+    }
+        .list-group-item .sub-item, .list-group-item .item:first-child {
+            display: flex;
+            color: #fff;
+            font-weight: 600;
+            align-items: center;
+            justify-content: center;
+            width: 120px;
+            height: 120px;
+            padding: 30px;
+            border-radius: 50%;
+            background-color: #73b64f;
+            font-size: 18px;
+            margin: 30px;
+            text-align: center;
+            border: 1px solid #000;
+            box-shadow: 0 0 40px rgba(115,182,79,0.6);
+        }
+        .list-group-item .item:first-child {
+            background-color: #fff;
+            color: #000;
+            z-index: 2;
+        }
+            .list-group-item .sub-item:nth-child(2n+1) {
+                margin-top: -50px;
+            }
+    .list-group-item .sub-item {
+        z-index: 1;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        width: 130px;
+        height: 130px;
+    }
+
+        .list-group-item .sub-item:hover {
+            transform: scale(1.4) translateY(40px);
+            box-shadow: 0 0 50px rgba(115,182,79,0.9);
+        }
+
+/* phan goi thieu chuc nang*/
+.function-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.funtion-list {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+}
+.function-logo{
+    padding: 50px 100px;
+}
+.function-logo img{
+    width: 100px;
+    height: 100px;
+}
+.function-container .card{
+    display: flex;
+    flex-direction: row;
+    width: 415px;
+    height: 260px;
+    border-radius: 10px;
+    background: linear-gradient(206.09deg, #2c2c2d 13.43%, #1a1a1e 80.64%);
+    margin: 100px 30px;
+    padding: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    text-align: left;
+}
+    .function-container .card-body {
+        margin-right: 90px;
+        line-height: 1.6;
+    }
+.function-container .card--scanip .card-body{
+    margin-right: 0;
+    margin-left: 90px;
+}
+.function-container .card-text{
+    margin-top: 12px;
+}
+
+.card-logo {
+    display: flex;
+    width: 100px;
+    height: 100px;
+    padding: 20px;
+    border-radius: 10px;
+    align-items: center;
+    position: absolute;
+    top: 70px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    border: none;
+}
+    .card-logo i {
+        color: #fff;
+        font-size: 60px;
+        justify-content: center;
+        align-items: center;
+    }
+.card--nslookup .card-logo, .card--ping .card-logo {
+    right: -50px;
+}
+.card--ping .card-logo {
+    background-color: rgb(235, 181, 18);
+}
+.card--nslookup .card-logo {
+    background-color: #56ccf2;
+}
+.card--scanip .card-logo {
+    background-color: #9b51e0;
+    left: -50px;
+}
+
+
+/* Hiệu ứng hover cho card */
+    .function-container .card:hover {
+        box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        transition: transform 1s ease;
+    }
+
+/* Hiệu ứng hover cho logo */
+.card-logo {
+    transition: all 0.3s ease;
+}
+
+    .card-logo:hover {
+        transform: scale(1.2);
+        box-shadow: 0 0 30px rgba(0,0,0,0.7);
+    }
+
+/* Thay đổi màu nền card khi hover */
+.card--ping:hover {
+    background: linear-gradient(206.09deg, rgba(235, 181, 18, 0.3) 13.43%, #2a2a2e 80.64%) !important;
+    border: 1px solid rgba(235, 181, 18, 0.5);
+    transform: translateX(-50px);
+}
+
+.card--nslookup:hover {
+    background: linear-gradient(206.09deg, rgba(86, 204, 242, 0.3) 13.43%, #2a2a2e 80.64%) !important;
+    border: 1px solid rgba(86, 204, 242, 0.5);
+    transform: translateX(-50px);
+}
+
+.card--scanip:hover {
+    background: linear-gradient(206.09deg, rgba(155, 81, 224, 0.3) 13.43%, #2a2a2e 80.64%) !important;
+    border: 1px solid rgba(155, 81, 224, 0.5);
+    transform: translateX(50px);
+}
+
+/* Hiệu ứng cho text khi hover */
+.function-container .card:hover .card-title {
+    color: var(--primary-color-hover);
+}
+
+.function-container .card:hover .card-text {
+    color: #e0e0e0;
+}
+
+/* Hiệu ứng cho logo khi card hover */
+.function-container .card:hover .card-logo {
+/*    transform: scale(1.15);*/
+    box-shadow: 0 0 25px currentColor;
+}
+
+.card--ping:hover .card-logo {
+    transform: translateX(-30px);
+    box-shadow: 0 0 20px rgba(235, 181, 18, 0.8);
+}
+
+.card--nslookup:hover .card-logo {
+    transform: translateX(-30px);
+    box-shadow: 0 0 20px rgba(86, 204, 242, 0.8);
+}
+
+.card--scanip:hover .card-logo {
+    transform: translateX(30px);
+    box-shadow: 0 0 20px rgba(155, 81, 224, 0.8);
+}

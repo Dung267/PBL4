@@ -1,6 +1,242 @@
 ﻿@{
-    ViewData["Title"] = "Privacy Policy";
+    ViewData["Title"] = "Hướng dẫn sử dụng";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<link rel="stylesheet" href="~/css/Ping.css" asp-append-version="true" />
+
+<style>
+    /* CSS Riêng cho trang Hướng dẫn */
+    .guide-section {
+        margin-bottom: 40px;
+    }
+
+    .guide-card {
+        background-color: var(--primary-bgcard-color); /* Màu nền khớp theme */
+        border: 1px solid #4a5568;
+        border-radius: 12px;
+        padding: 25px;
+        color: #e2e8f0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s;
+    }
+
+        .guide-card:hover {
+            border-color: #63b3ed;
+            transform: translateY(-2px);
+        }
+
+    .guide-title {
+        color: #63b3ed; /* Màu xanh sáng */
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #4a5568;
+        padding-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .step-list {
+        list-style-type: none;
+        padding-left: 0;
+    }
+
+        .step-list li {
+            margin-bottom: 10px;
+            position: relative;
+            padding-left: 25px;
+        }
+
+            .step-list li::before {
+                content: "👉";
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+
+    .param-table {
+        width: 100%;
+        margin-top: 15px;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+        .param-table th, .param-table td {
+            border: 1px solid #4a5568;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .param-table th {
+            background-color: #2d3748;
+            color: #fff;
+        }
+
+    .badge-cmd {
+        background-color: #2d3748;
+        border: 1px solid #718096;
+        color: #48bb78; /* Màu xanh lá kiểu terminal */
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.9em;
+    }
+
+    .note-box {
+        background-color: rgba(236, 201, 75, 0.1);
+        border-left: 4px solid #ecc94b;
+        padding: 10px;
+        margin-top: 15px;
+        font-size: 0.9rem;
+        color: #d6bcfa;
+    }
+</style>
+
+<div class="ping-container">
+    <div class="ping-header">
+        <h2 class="ping-title">📖 Hướng dẫn sử dụng</h2>
+        <p style="color: #a0aec0; text-align: center;">Tài liệu hướng dẫn các chức năng quản trị mạng</p>
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-12 guide-section">
+            <div class="guide-card">
+                <h3 class="guide-title">🚀 1. Công cụ Ping (Kiểm tra kết nối)</h3>
+                <p>Công cụ Ping giúp bạn kiểm tra xem một máy chủ (Host) hoặc địa chỉ IP có thể truy cập được qua mạng hay không và đo thời gian phản hồi.</p>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h5>🖥️ Chế độ Giao diện (GUI)</h5>
+                        <ul class="step-list">
+                            <li>Nhập <strong>Host/IP</strong> (VD: <code>google.com</code> hoặc <code>8.8.8.8</code>).</li>
+                            <li>
+                                Tùy chỉnh các thông số:
+                                <table class="param-table">
+                                    <tr><th>Tham số</th><th>Ý nghĩa</th></tr>
+                                    <tr><td>Count (-n)</td><td>Số gói tin gửi đi (Mặc định: 4).</td></tr>
+                                    <tr><td>Timeout (-w)</td><td>Thời gian chờ phản hồi (ms).</td></tr>
+                                    <tr><td>TTL (-i)</td><td>Time To Live (Thời gian sống của gói tin).</td></tr>
+                                    <tr><td>Resolve (-a)</td><td>Phân giải tên miền từ IP.</td></tr>
+                                </table>
+                            </li>
+                            <li>Nhấn nút <strong>Start Ping</strong> để bắt đầu.</li>
+                            <li>Nhấn <strong>Stop Ping</strong> để dừng nếu đang chạy liên tục.</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>💻 Chế độ Lệnh (Command)</h5>
+                        <p>Nhập lệnh trực tiếp giống như CMD trên Windows.</p>
+                        <p>Cú pháp mẫu:</p>
+                        <div class="badge-cmd p-3 mb-2">ping -t -n 10 -w 1000 google.com</div>
+                        <p>Các cờ hỗ trợ:</p>
+                        <ul class="step-list">
+                            <li><code>-t</code>: Ping liên tục.</li>
+                            <li><code>-4</code> / <code>-6</code>: Ép dùng IPv4 hoặc IPv6.</li>
+                            <li><code>-f</code>: Không phân mảnh gói tin (Don't Fragment).</li>
+                            <li><code>-S</code>: Chọn địa chỉ ip nguồn</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-12 guide-section">
+            <div class="guide-card">
+                <h3 class="guide-title">📡 2. Công cụ NSLookup (Tra cứu DNS)</h3>
+                <p>Công cụ này giúp bạn truy vấn thông tin DNS của một tên miền để tìm địa chỉ IP hoặc các bản ghi khác.</p>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h5>📝 Các bước thực hiện</h5>
+                        <ul class="step-list">
+                            <li><strong>Bước 1:</strong> Nhập tên miền (VD: <code>uit.edu.vn</code>).</li>
+                            <li>
+                                <strong>Bước 2:</strong> Chọn loại Record cần tra cứu:
+                                <br />
+                                <span class="badge-cmd">A</span> (IPv4),
+                                <span class="badge-cmd">AAAA</span> (IPv6),
+                                <span class="badge-cmd">MX</span> (Mail),
+                                <span class="badge-cmd">NS</span> (Name Server)...
+                            </li>
+                            <li><strong>Bước 3 (Tùy chọn):</strong> Nhập DNS Server cụ thể (VD: <code>8.8.8.8</code>) nếu không muốn dùng DNS mặc định của máy.</li>
+                            <li><strong>Bước 4:</strong> Nhấn nút <strong>Tra cứu DNS</strong>.</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>⚠️ Lưu ý quan trọng</h5>
+                        <div class="note-box">
+                            <strong>Timeout:</strong> Mặc định là 5000ms (5 giây). Nếu mạng chậm, hãy tăng giá trị này lên.<br /><br />
+                            <strong>Chế độ lệnh:</strong> Hỗ trợ cú pháp chuẩn:<br />
+                            <code>nslookup -type=MX google.com 8.8.8.8</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-12 guide-section">
+            <div class="guide-card" style="border-color: #63b3ed;">
+                <h3 class="guide-title">🔍 3. Công cụ IP Scan</h3>
+                <p>Quét một dải địa chỉ IP để xác định các thiết bị đang hoạt động (Online) và đo thời gian phản hồi (RTT).</p>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h5>⚙️ Cách nhập liệu</h5>
+                        <ul class="step-list">
+                            <li>
+                                <strong>Nhập IP hoặc Dải IP:</strong>
+                                <br>Hỗ trợ 2 định dạng:
+                                <ul>
+                                    <li>Một IP đơn lẻ: <code>192.168.1.1</code></li>
+                                    <li>Một dải IP (ngăn cách bằng dấu gạch ngang): <code>192.168.1.1-192.168.1.20</code></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>Cấu hình nâng cao:</strong>
+                                <table class="param-table">
+                                    <tr>
+                                        <th width="40%">Tham số</th>
+                                        <th>Giải thích</th>
+                                    </tr>
+                                    <tr>
+                                        <td>Timeout (ms)</td>
+                                        <td>Thời gian tối đa chờ phản hồi từ mỗi IP (Mặc định: 700ms).</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Max parallel</td>
+                                        <td>Số luồng quét đồng thời (Mặc định: 150). Số càng lớn quét càng nhanh nhưng tốn tài nguyên CPU.</td>
+                                    </tr>
+                                </table>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5>📊 Đọc kết quả</h5>
+                        <p>Sau khi nhấn nút <strong>🚀 Start Scan</strong>, bảng kết quả sẽ hiển thị:</p>
+                        <ul class="step-list">
+                            <li><strong>IP Address:</strong> Địa chỉ đã quét.</li>
+                            <li>
+                                <strong>Status:</strong>
+                                <ul>
+                                    <li>✅ <span style="color:#48bb78; font-weight:bold;">Online</span>: Thiết bị phản hồi.</li>
+                                    <li>❌ <span style="color:#718096; font-weight:bold;">Offline</span>: Không có phản hồi.</li>
+                                </ul>
+                            </li>
+                            <li><strong>RTT (ms):</strong> Thời gian phản hồi (Round Trip Time).</li>
+                        </ul>
+
+                        <div class="note-box">
+                            <strong>💡 Mẹo tối ưu:</strong><br />
+                            - Nếu mạng Lan chậm, hãy tăng <strong>Timeout</strong> lên <code>1000</code> hoặc <code>2000</code>.<br />
+                            - Nếu máy cấu hình yếu, hãy giảm <strong>Max parallel</strong> xuống <code>50</code>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

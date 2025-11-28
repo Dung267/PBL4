@@ -1,0 +1,197 @@
+﻿@model PBL4.Models.TracertResult
+
+@{
+    ViewData["Title"] = "Traceroute Tool";
+}
+
+@* Sử dụng lại CSS cơ bản từ Ping để đồng bộ giao diện *@
+<link rel="stylesheet" href="~/css/Ping.css" asp-append-version="true" />
+<style>
+    /* CSS bổ sung để định dạng kết quả tracert */
+    .tracert-form-section {
+        background-color: #333;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        color: #fff;
+    }
+
+    .tracert-results-section {
+        background-color: #222;
+        padding: 20px;
+        border-radius: 8px;
+        color: #0f0; /* Màu xanh lá đặc trưng của console */
+    }
+
+    .tracert-table th, .tracert-table td {
+        color: #0f0 !important;
+        border-color: #444 !important;
+        background-color: #222 !important;
+        /* Giảm padding để nhìn giống console hơn */
+        padding: 0.3rem !important;
+    }
+
+    .tracert-table .timeout {
+        color: #f00 !important; /* Đỏ cho Timeout */
+        font-weight: bold;
+    }
+
+    .tracert-table .destination {
+        font-weight: bold;
+        color: #ff0 !important; /* Vàng cho đích đến */
+    }
+</style>
+
+<div class="ping-container">
+    <div class="ping-header">
+        <h2 class="ping-title">Traceroute Tool</h2>
+    </div>
+
+    <div class="tracert-form-section">
+        <h2>Theo dõi Tuyến đường (Tracert)</h2>
+        <form asp-action="Index" method="post" id="tracertForm">
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="form-group">
+                        <label class="form-label" for="host">📍 Host/IP:</label>
+                        <input type="text" name="host" id="tracert_host" class="form-control" value="google.com" placeholder="Nhập địa chỉ IP hoặc tên miền..." required />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label class="form-label" for="options_MaxHops">Max Hops (-h):</label>
+                        <input type="number" name="options.MaxHops" id="options_MaxHops" class="form-control" value="30" min="1" max="100" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label class="form-label" for="options_Timeout">Timeout (-w) (ms):</label>
+                        <input type="number" name="options.Timeout" id="options_Timeout" class="form-control" value="4000" min="100" max="30000" />
+                    </div>
+                </div>
+                <div class="col-md-3 mt-4">
+                    <button type="submit" class="btn btn-primary w-100">🚀 Start Tracert</button>
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <div class="form-check">
+                        <label class="form-check-label" for="options_ForceIpv4">IPv4 Only (-4)</label>
+                        <input type="checkbox" name="options.ForceIpv4" id="options_ForceIpv4" value="true" class="form-check-input" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check">
+                        <label class="form-check-label" for="options_ForceIpv6">IPv6 Only (-6)</label>
+                        <input type="checkbox" name="options.ForceIpv6" id="options_ForceIpv6" value="true" class="form-check-input" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <label class="form-check-label" for="options_NoResolve">⛔ Không phân giải tên (-d)</label>
+                        <input type="checkbox" name="options.NoResolve" id="options_NoResolve" value="true" class="form-check-input" />
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    @if (Model != null && !string.IsNullOrEmpty(Model.TargetIP))
+    {
+        <div class="tracert-results-section">
+            <h2 style="color: #ff0; font-size: 20px;">KẾT QUẢ TRACEROUTE</h2>
+
+            @if (Model.Messages.Count > 0)
+            {
+                <p style="color: red;">
+                    @foreach (var msg in Model.Messages)
+                    {
+                        @msg
+                        <br />
+                    }
+                </p>
+                <br />
+            }
+
+            <p><strong>Truy tìm tuyến đường đến @Model.Target [@Model.TargetIP]</strong></p>
+            <p>Thời gian chờ tối đa cho mỗi lần phản hồi: @Model.Hops.FirstOrDefault()?.Times.Count x @Model.Hops.FirstOrDefault()?.Times.FirstOrDefault() ms</p>
+            <p>Số bước nhảy tối đa: @(Model.MaxHops)</p>
+            <table class="table table-sm tracert-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">Hop</th>
+                        <th style="width: 15%;">Time 1</th>
+                        <th style="width: 15%;">Time 2</th>
+                        <th style="width: 15%;">Time 3</th>
+                        <th style="width: 50%;">Địa chỉ/Tên máy chủ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var hop in Model.Hops)
+                    {
+                        string hopClass = hop.ReachedDestination ? "destination" : "";
+                        <tr>
+                            <td class="@hopClass">@hop.HopNumber</td>
+
+                            @* Hiển thị 3 lần ping cho mỗi hop *@
+                            @for (int i = 0; i < 3; i++)
+                            {
+                                string timeDisplay = hop.GetTimeDisplay(i);
+                                string timeClass = timeDisplay == "*" ? "timeout" : "";
+
+                                <td><span class="@timeClass">@timeDisplay</span></td>
+                            }
+                            <td class="@hopClass">@hop.HostName</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (Model.Success)
+            {
+                <p style="color: #00ff00;">**Truy vết hoàn thành! Đã tìm thấy đích đến.**</p>
+            }
+            else if (Model.Hops.Count > 0 && !Model.Messages.Any())
+            {
+                <p style="color: #ffaa00;">**Truy vết bị dừng trước khi đến đích hoặc đạt giới hạn Hop.**</p>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Logic để đảm bảo checkbox không chọn vẫn gửi giá trị false
+        $('form').submit(function () {
+            var form = $(this);
+            var checkboxes = $('input[type=checkbox]', form);
+
+            checkboxes.each(function () {
+                if (!this.checked) {
+                    // Thêm hidden input với giá trị false
+                    var hiddenInput = $('<input>').attr({
+                        type: 'hidden',
+                        name: this.name,
+                        value: 'false'
+                    });
+                    form.append(hiddenInput);
+                }
+            });
+            // Kiểm tra xung đột -4 và -6 ngay trên trình duyệt
+            var ipv4Checked = $('#options_ForceIpv4').is(':checked');
+            var ipv6Checked = $('#options_ForceIpv6').is(':checked');
+
+            if (ipv4Checked && ipv6Checked) {
+                alert("Lỗi: Không thể chọn IPv4 Only (-4) và IPv6 Only (-6) cùng một lúc.");
+                return false; // Ngăn chặn form submit
+            }
+
+            return true; // Cho phép form submit
+        });
+
+    </script>
+
+    @Html.AntiForgeryToken()
+}

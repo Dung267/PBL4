@@ -1,8 +1,77 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
 }
-
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<link rel="stylesheet" href="~/css/Base.css" asp-append-version="true" />
+<div class="body">
+    <div class="container-custom">
+        @* phan gioi thieu *@
+        <div class="row justify-content-between">
+           <div class="col-5">
+               <h1 class="home-title">Bộ công cụ quản trị mạng</h1>
+               <p class="home-desc">Website mô phỏng các chức năng của bộ quản trị mạng: ping, tracert, scanip, nslookup</p>
+           </div>
+           <div class="col-5">
+               <div class="list-group-item">
+                    <div class="item">
+                        Network Tool
+                    </div>
+                    <div class="item">
+                        <div class="sub-item">
+                             Ping Tool
+                        </div>
+                        <div class="sub-item">
+                             ScanIP Tool
+                        </div>
+                        <div class="sub-item">
+                             NSLookup Tool
+                        </div>
+                    </div>
+               </div>
+           </div>
+        </div>
+        @* phan chuc nang *@
+        <div class="function-container">
+        <div class="function-list">
+            <div class="card text-white bg-dark card--ping">
+                <div class="card-body">
+                    <h4 class="card-title">Ping Tool</h4>
+                    <p class="card-text">Công cụ kiểm tra kết nối mạng bằng cách gửi gói tin ICMP tới máy chủ đích.</p>
+                    <p class="card-text">Giúp xác định độ trễ (latency), tình trạng phản hồi và tỷ lệ mất gói trong quá trình truyền dữ liệu.</p>   
+                </div>
+                <div class="card-logo">
+                      <i class="bi bi-geo-alt"></i>
+                </div>
+            </div>
+            <div class="card text-white bg-dark card--nslookup">
+                <div class="card-body">
+                    <h4 class="card-title">NSlookup Tool</h4>
+                    <p class="card-text">Tiện ích tra cứu DNS, cho phép truy vấn các bản ghi như A, AAAA, MX, CNAME, TXT…</p>
+                    <p class="card-text">Mục đích kiểm tra cấu hình và tình trạng phân giải tên miền trên các máy chủ DNS.</p>
+                </div>
+                 <div class="card-logo">
+                     <i class="bi bi-globe2"></i>
+                 </div>
+            </div>
+        </div>
+        <div class="function-logo">
+            <img src="https://www.avocadosys.com/wp-content/themes/avocado/assets/images/core.svg" alt="anh dieu huong" />
+        </div>
+        <div class="function-list">
+            <div class="card text-white bg-dark card--scanip">
+                <div class="card-body">
+                    <h4 class="card-title">ScanIp Tool</h4>
+                    <p class="card-text">Công cụ quét địa chỉ IP để phát hiện các cổng (ports) mở và dịch vụ đang hoạt động.</p>
+                    <p class="card-text">Hỗ trợ đánh giá cấu hình mạng và kiểm tra bảo mật hệ thống.</p>
+                </div>
+                 <div class="card-logo">
+                     <i class="bi bi-search"></i>
+                 </div>
+            </div>
+        </div>
+        </div>
+        </div>
 </div>
+
+
+
+
